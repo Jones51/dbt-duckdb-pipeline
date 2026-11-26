@@ -1,0 +1,26 @@
+models:
+  - name: stg_job_postings
+    description: "Cleaned postings: one row per job posting, rows with ingestion errors removed."
+    config:
+      persist_docs:
+        relation: true
+        columns: true
+    columns:
+      - name: job_id
+        description: "Unique identifier for the job posting."
+      - name: job_title
+        description: "Title of the job posting."
+        data_tests:
+          - not_null
+      - name: company_name
+        description: "Company offering the job."
+      - name: job_location
+        description: "Location of the job."
+      - name: job_schedule_type
+        description: "Type of job schedule (e.g., full-time, part-time)."
+      - name: job_work_from_home
+        description: "Indicates if the job is work from home."
+      - name: search_date
+        description: "Date when the job was searched."
+      - name: search_term
+        description: "Search term used to find the job posting."
