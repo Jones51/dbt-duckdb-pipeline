@@ -1,5 +1,6 @@
 # Automated Job Posting Pipeline (v1) - dbt + DuckDB
 
+[![dbt build & publish](https://github.com/Jones51/dbt-duckdb-pipeline/actions/workflows/dbt_build.yml/badge.svg?branch=master)](https://github.com/Jones51/dbt-duckdb-pipeline/actions/workflows/dbt_build.yml)
 
 ![dbt pipeline diagram](img/dbt_pipeline.png)
 
@@ -13,8 +14,8 @@ A public dbt + DuckDB pipeline over ~692k real job postings, rebuilt and republi
 
 | What I Built | How I Implemented | Where to Look |
 | --- | --- | --- |
-| **dbt pipeline** | sources → cleaned model → insight marts | [`analytics/models/`](analytics/models/) |
-| **Data tests** | `unique` / `not_null` on every mart grain | [`schema.yml`](analytics/models/schema.yml) |
+| **dbt pipeline** | sources → `staging/` → `marts/` | [`analytics/models/`](analytics/models/) |
+| **Data tests** | grain test (`unique` or composite key) + `not_null` on every mart | [`_marts.yml`](analytics/models/marts/_marts.yml) |
 | **Hosted dbt docs** | lineage, descriptions, column tests | [Live docs site](https://jones51.github.io/dbt-duckdb-pipeline/) |
 | **Public CI** | build + test + publish on every push | [Actions workflow](https://github.com/Jones51/dbt-duckdb-pipeline/actions) |
 | **Environments** | local `dev` vs CI `prod` targets | [`ci/profiles.yml`](ci/profiles.yml) |
@@ -28,14 +29,21 @@ Raw postings flow through three dbt layers — declared sources → cleaned stag
 
 ![dbt dag diagram](img/dag_pipeline.png)
 
+| Layer | Model | Grain | Materialization |
+| --- | --- | --- | --- |
+| Staging | `stg_job_postings` | one row per posting (error rows dropped) | view |
+| Marts | `fct_postings_by_month_role` | one row per (month, role) | table |
+| Marts | `fct_monthly_summary` | one row per month (totals + remote share) | table |
+| Marts | `fct_top_locations` | one row per location (top 10) | table |
+
 And the dbt features doing the work:
 
 | dbt Feature | How I Used It |
 | --- | --- |
-| Declared sources (no hardcoded paths in SQL) | [`sources.yml`](analytics/models/sources.yml) + `source('raw', 'job_postings')` |
+| Declared sources (no hardcoded paths in SQL) | [`_sources.yml`](analytics/models/staging/_sources.yml) + `source('raw', 'job_postings')` |
 | Model dependencies | `ref()` everywhere downstream; dbt resolves order and parallelism |
-| Materializations | project default `table`; staging override to `view` |
-| Data tests | `unique` / `not_null` on mart grains in [`schema.yml`](analytics/models/schema.yml) |
+| Materializations | set per folder in [`dbt_project.yml`](analytics/dbt_project.yml): `staging/` → `view`, everything else → `table` |
+| Data tests | every mart has a grain test: `unique` on `month` / `job_location`, and a composite-key test on (`month`, `role`) via a custom generic test ([`unique_combination_of_columns`](analytics/tests/generic/unique_combination_of_columns.sql)); `not_null` on keys and counts |
 | Environments | local `dev` vs CI `prod` targets ([`ci/profiles.yml`](ci/profiles.yml)) |
 
 `dbt build` compiles SQL, materializes models, and fails the run if any test fails — same command locally and in CI.
@@ -48,7 +56,7 @@ GitHub Actions runs the whole pipeline — no laptop required: [`.github/workflo
 
 | Trigger | What happens |
 | --- | --- |
-| Push to `main` | Full rebuild |
+| Push to `master` | Full rebuild |
 | Weekly (Monday) | Scheduled rebuild — pipeline stays fresh |
 | Manual (`workflow_dispatch`) | Run button in the Actions UI |
 
@@ -75,8 +83,8 @@ ATTACH 'https://github.com/Jones51/dbt-duckdb-pipeline/releases/download/warehou
 USE jobs;
 SHOW TABLES;
 
-SELECT * FROM top_locations;
-SELECT * FROM monthly_summary;
+SELECT * FROM fct_top_locations;
+SELECT * FROM fct_monthly_summary;
 ```
 
 
@@ -124,7 +132,10 @@ uv run dbt docs serve
 ├── docs/                             # dbt docs site (GitHub Pages)
 ├── analytics/
 │   ├── dbt_project.yml
-│   └── models/                       # sources, staging, marts, schema.yml
+│   ├── models/
+│   │   ├── staging/                  # _sources.yml, stg_job_postings (views)
+│   │   └── marts/                    # fct_* models + tests (tables)
+│   └── tests/generic/                # custom composite-key test
 └── scripts/download_data.py          # fetch raw parquet before build
 ```
 
