@@ -1,7 +1,7 @@
 [project]
 name = "dbt-duckdb-pipeline"
 version = "0.1.0"
-description = "Add your description here"
+description = "dbt + DuckDB marts over job posting data"
 readme = "README.md"
 authors = [
     { name = "Joao", email = "joaomarcosa51@gmail.com" }

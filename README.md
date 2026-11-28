@@ -7,10 +7,18 @@
 A public dbt + DuckDB pipeline over ~692k real job postings, rebuilt and republished automatically on every push.
 
 - Models the raw postings into tested, documented insight marts
-- Publishes the docs site and the finished warehouse — open to anyone, no credentials
+- Publishes the finished warehouse from CI, plus a hosted docs site — open to anyone, no credentials
 - Runs itself on GitHub Actions: every push and every Monday
 
-> **v1 of this pipeline** — everything free and local-friendly: DuckDB as the warehouse, GitHub Actions as the scheduler. [v2](../project_2/) rebuilds it production-grade on Databricks.
+> **v1 of this pipeline** — everything free and local-friendly: DuckDB as the warehouse, GitHub Actions as the scheduler. v2, a production-grade rebuild on Databricks, is in development.
+>
+> **Credits:** built following Luke Barousse's course [dbt for Data Analytics & Engineering - Full Course with 2 Projects](https://www.youtube.com/watch?v=1Bf049kXV2g). The dataset comes from the [course repository](https://github.com/lukebarousse/dbt_Analytics_Engineering_Course).
+
+## 🎯 Business problem
+
+Raw job postings are hard to compare. These marts answer: how demand per role changes month by month, what share is remote, and which locations post the most.
+
+## 🧰 What I built
 
 | What I Built | How I Implemented | Where to Look |
 | --- | --- | --- |
@@ -119,6 +127,16 @@ Optional docs locally:
 uv run dbt docs generate
 uv run dbt docs serve
 ```
+
+---
+
+## 🗺️ Next steps
+
+- v2 on Databricks (in development)
+- Dimensional model (facts and dimensions) including job skills
+- Incremental model for the postings fact table
+- Window functions for month-over-month change
+- Generate dbt docs inside the CI workflow
 
 ---
 
